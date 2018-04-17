@@ -35,9 +35,6 @@ import ai.api.services.SpeaktoitRecognitionServiceImpl;
 import android.content.pm.PackageManager;
 import android.support.v4.content.ContextCompat;
 
-/**
- * Main SDK class for working with API.AI service.
- */
 public abstract class AIService {
 
     private static final String TAG = AIService.class.getName();
@@ -49,12 +46,6 @@ public abstract class AIService {
 
     private AIListener listener;
 
-    /**
-     * Use this method to get ready to work instance
-     * @param context
-     * @param config
-     * @return instance of AIService implementation
-     */
     public static AIService getService(final Context context, final AIConfiguration config) {
         if (config.getRecognitionEngine() == AIConfiguration.RecognitionEngine.Google) {
             return new GoogleRecognitionServiceImpl(context, config);
@@ -76,36 +67,16 @@ public abstract class AIService {
         aiDataService = new AIDataService(context, config);
     }
 
-    /**
-     * Starts listening process
-     */
     public abstract void startListening();
 
-    /**
-     * Starts listening process. Request to the AI service will be done with specified contexts.
-     */
     public abstract void startListening(List<AIContext> contexts);
 
-    /**
-     * Starts listening process. Request to the AI service will be done with specified extra data.
-     * @param requestExtras extras can hold additional contexts and entities
-     */
     public abstract void startListening(RequestExtras requestExtras);
 
-    /**
-     * Stop listening and start request to the AI service with current recognition results
-     */
     public abstract void stopListening();
 
-    /**
-     * Cancel listening process and don't request to AI service
-     */
     public abstract void cancel();
 
-    /**
-     * Sets listener, which used to notify about process steps
-     * @param listener {@link AIListener AIListener} implementation
-     */
     public void setListener(final AIListener listener) {
         this.listener = listener;
     }
@@ -166,30 +137,13 @@ public abstract class AIService {
         return aiDataService.request(aiRequest);
     }
 
-    /**
-     * Forget all old contexts
-     * @return true if operation succeed, false otherwise
-     */
     public boolean resetContexts() {
         return aiDataService.resetContexts();
     }
 
-    /**
-     * Upload user entity for using while session
-     * @param userEntity entity to upload
-     * @return uploading result
-     * @throws AIServiceException
-     */
     public AIResponse uploadUserEntity(final Entity userEntity) throws AIServiceException {
         return aiDataService.uploadUserEntity(userEntity);
     }
-
-    /**
-     * Upload user entities for using while session
-     * @param userEntities collection of user entities
-     * @return uploading result
-     * @throws AIServiceException if request to the API.AI service failed
-     */
     public AIResponse uploadUserEntities(final Collection<Entity> userEntities) throws AIServiceException {
         return aiDataService.uploadUserEntities(userEntities);
     }
