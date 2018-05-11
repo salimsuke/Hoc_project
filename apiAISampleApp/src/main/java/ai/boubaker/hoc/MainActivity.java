@@ -32,8 +32,8 @@ public class MainActivity extends BaseActivity {
         setContentView(R.layout.activity_main);
 
         TTS.init(getApplicationContext());
-        Intent intent = new Intent(this, AIButtonSampleActivity.class);
-        startActivity(intent);
+//        Intent intent = new Intent(this, AIButtonSampleActivity.class);
+//        startActivity(intent);
     }
 
     @Override

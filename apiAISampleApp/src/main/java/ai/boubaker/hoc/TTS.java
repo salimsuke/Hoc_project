@@ -19,6 +19,8 @@ package ai.boubaker.hoc;
 import android.content.Context;
 import android.speech.tts.TextToSpeech;
 
+import java.util.Locale;
+
 public class TTS {
 
     private static TextToSpeech textToSpeech;
@@ -34,7 +36,11 @@ public class TTS {
         }
     }
 
-    public static void speak(final String text) {
+    public static void speak(String s, final String text) {
+        if (s == "fr")
+            textToSpeech.setLanguage(Locale.FRENCH);
+        else
+            textToSpeech.setLanguage(Locale.ENGLISH);
         textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null);
     }
 }

@@ -35,7 +35,7 @@ import ai.api.services.SpeaktoitRecognitionServiceImpl;
 import android.content.pm.PackageManager;
 import android.support.v4.content.ContextCompat;
 
-public abstract class AIService {
+public abstract class  AIService {
 
     private static final String TAG = AIService.class.getName();
 

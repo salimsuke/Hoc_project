@@ -19,7 +19,6 @@ package ai.boubaker.hoc;
 public abstract class Config {
     // copy this keys from your developer dashboard
     public static final String ACCESS_TOKEN = "10312a30b0044da9ab54b68586c2c8c7";
-
     public static final LanguageConfig[] languages = new LanguageConfig[]{
             new LanguageConfig("en", "a11ea1d839e3446d84e402cb97cdadfb"),
             new LanguageConfig("ru", "c8acebfbeeaa42ccb986e30573509055"),

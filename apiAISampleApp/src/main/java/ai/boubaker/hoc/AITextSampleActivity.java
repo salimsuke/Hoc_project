@@ -192,7 +192,7 @@ public class AITextSampleActivity extends BaseActivity implements AdapterView.On
 
                 final String speech = result.getFulfillment().getSpeech();
                 Log.i(TAG, "Speech: " + speech);
-                TTS.speak(speech);
+                TTS.speak("", speech);
 
                 final Metadata metadata = result.getMetadata();
                 if (metadata != null) {

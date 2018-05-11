@@ -5,7 +5,19 @@
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Base.Theme.AppCompat.Light.DarkActionBar">
     </style>
+    <style name="textBig" parent="@android:style/TextAppearance.Large">
+        <item name="android:textSize">82sp</item>
+        <item name="android:textColor">#ffffff</item>
+    </style>
+    <style name="textSmall" parent="@android:style/TextAppearance.Small">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">#ffffff</item>
+    </style>
 
+    <style name="textVerySmall" parent="@android:style/TextAppearance.Small">
+        <item name="android:textSize">8sp</item>
+        <item name="android:textColor">#ffffff</item>
+    </style>
     <style name="SettingsSection">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>

@@ -2,18 +2,24 @@ package ai.boubaker.hoc;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.AlertDialog;
+import android.app.SearchManager;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.CalendarContract;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -24,7 +30,9 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.BufferedReader;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.DateFormat;
@@ -34,6 +42,7 @@ import java.util.ArrayList;
 import com.google.gson.Gson;
 
 import org.json.JSONException;
+import org.json.JSONObject;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
@@ -41,20 +50,16 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import ai.boubaker.hoc.Models.*;
-
-import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import ai.api.android.AIConfiguration;
-import ai.api.android.GsonFactory;
 import ai.api.model.AIError;
 import ai.api.model.AIResponse;
 import ai.api.model.Result;
 import ai.api.sample.R;
 import ai.api.ui.AIButton;
+
+import static android.content.Context.MODE_PRIVATE;
 
 public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIButtonListener, TextToSpeech.OnInitListener {
 
@@ -63,22 +68,31 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
     List<String> img_floor = new ArrayList<>();
     private AIButton aiButton;
     String urll="";
+    private static final String[] formats = {
+            "yyyy-MM-dd'T'HH:mm:ss'Z'",   "yyyy-MM-dd'T'HH:mm:ssZ", "dd MMMM yyyy",
+            "yyyy-MM-dd'T'HH:mm:ss",      "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", "yyyy-MM-dd HH:mm:ss",
+            "yyyy-MM-dd'T'HH:mm:ss.SSSZ", "yyyy-MM-dd HH:mm:ss",
+            "MM/dd/yyyy HH:mm:ss",        "MM/dd/yyyy'T'HH:mm:ss.SSS'Z'",
+            "MM/dd/yyyy'T'HH:mm:ss.SSSZ", "MM/dd/yyyy'T'HH:mm:ss.SSS",
+            "MM/dd/yyyy'T'HH:mm:ssZ",     "MM/dd/yyyy'T'HH:mm:ss",
+            "yyyy:MM:dd HH:mm:ss",        "yyyyMMdd", "yyyy-MM-dd", "HH:mm:ss", "HH:mm" };
     ImageView fotoView;
     private ListView mList;
-    List<Users> HoC = new ArrayList<>();
     String URL1;
     List<IALink> HoC1 = new ArrayList<>();
-    DateFormat format = new SimpleDateFormat("dd MMMM yyyy");
     int indice = -1;
     Users HoC2 = null;
+    SharedPreferences language;
     Users a;
+    TextView loc = null;
     boolean signed_in = false;
     boolean exist = false;
-    private Gson gson = GsonFactory.getGson();
+    JSONObject data_weather  = null;
     int i=2;
     TextView html;
     SharedPreferences pref;
     SharedPreferences.Editor editor;
+    AIConfiguration config;
     String uri = "https://aiassistantserver.azurewebsites.net/api/";
     List<String> commands = new ArrayList<String>();
     @Override
@@ -86,18 +100,33 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_aibutton_sample);
         getSupportActionBar().hide();
-        pref = getApplicationContext().getSharedPreferences("Identif", MODE_PRIVATE);
+        pref =      getApplicationContext().getSharedPreferences("Identif", MODE_PRIVATE);
+        language =  getApplicationContext().getSharedPreferences("lang", MODE_PRIVATE);
         editor = pref.edit();
         html = new TextView(this);
         commands.add("");
         commands.add("");
         aiButton = (AIButton) findViewById(R.id.micButton);
         mList = (ListView) findViewById(R.id.listView1);
+        Log.e("Language1" , ""+language.getString("lang", ""));
+        Log.e("Base language", ""+getBaseContext().getResources().getConfiguration().locale.getDisplayName());
+        if(language.getString("lang", "").contains("fr")){
+            config = new AIConfiguration(Config.ACCESS_TOKEN,
+                    AIConfiguration.SupportedLanguages.French,
+                    AIConfiguration.RecognitionEngine.System);
+            Locale locale = new Locale("FR");
+            Locale.setDefault(locale);
+            Configuration config = new Configuration();
+            config.locale = locale;
+            getApplicationContext().getResources().updateConfiguration(config, null);
 
-        final AIConfiguration config = new AIConfiguration(Config.ACCESS_TOKEN,
-                AIConfiguration.SupportedLanguages.English,
-                AIConfiguration.RecognitionEngine.System);
-
+        }
+        else{
+            config = new AIConfiguration(Config.ACCESS_TOKEN,
+                    AIConfiguration.SupportedLanguages.English,
+                    AIConfiguration.RecognitionEngine.System);
+        }
+        Log.e("Base language", ""+getBaseContext().getResources().getConfiguration().locale.getDisplayName());
         config.setRecognizerStartSound(getResources().openRawResourceFd(R.raw.test_start));
         config.setRecognizerStopSound(getResources().openRawResourceFd(R.raw.test_stop));
         config.setRecognizerCancelSound(getResources().openRawResourceFd(R.raw.test_cancel));
@@ -140,31 +169,48 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
             @SuppressLint("LongLogTag")
             @Override
             public void run() {
+                Log.e("Language2" , ""+language.getString("lang", ""));
+                if(language.getString("lang", "").contains("fr")){
+                    config = new AIConfiguration(Config.ACCESS_TOKEN,
+                            AIConfiguration.SupportedLanguages.French,
+                            AIConfiguration.RecognitionEngine.System);
+                    getBaseContext().getResources().getConfiguration().locale.setDefault(new Locale("FR", "FRANCE"));
+                }
+                else{
+                    config = new AIConfiguration(Config.ACCESS_TOKEN,
+                            AIConfiguration.SupportedLanguages.English,
+                            AIConfiguration.RecognitionEngine.System);
+                }
+                config.setRecognizerStartSound(getResources().openRawResourceFd(R.raw.test_start));
+                config.setRecognizerStopSound(getResources().openRawResourceFd(R.raw.test_stop));
+                config.setRecognizerCancelSound(getResources().openRawResourceFd(R.raw.test_cancel));
+                aiButton.initialize(config);
+                aiButton.setResultsListener(AIButtonSampleActivity.this);
                 final Result result = response.getResult();
-//                Log.e("Intent intreged",result.getMetadata().getIntentName());
+                Log.e("Intent name", result.getMetadata().getIntentName());
                 if ((signed_in == true)&&(result.getMetadata().getIntentName().contains("Sign in"))){
-                    result.getFulfillment().setSpeech("You are already signed in.");
+                    result.getFulfillment().setSpeech(getResources().getString(R.string.signed_in));
                     commands.add(result.getFulfillment().getSpeech());
-                    TTS.speak(result.getFulfillment().getSpeech());
+                    TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                     i++;
                 }
                 if ((signed_in == true)&&(result.getMetadata().getIntentName().contains("Sign out"))){
                     commands.add(result.getFulfillment().getSpeech());
-                    TTS.speak(result.getFulfillment().getSpeech());
+                    TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                     i++;
                     signed_in = false;
                     show(result);
                     return;
                 }
                 if ((signed_in == false)&&(result.getMetadata().getIntentName().contains("Sign out"))){
-                    result.getFulfillment().setSpeech("You are already signed out.");
+                    result.getFulfillment().setSpeech(getResources().getString(R.string.signed_out));
                     commands.add(result.getFulfillment().getSpeech());
-                    TTS.speak(result.getFulfillment().getSpeech());
+                    TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                     i++;
                     show(result);
                     return;
                 }
-                if (commands.get(i-1).contains("Ok, please give me")){
+                if ((commands.get(i-1).contains("Ok, please give me"))||(commands.get(i-1).contains("D'accord, donnez-moi votre numéro d'identification."))){
                     commands.add(result.getFulfillment().getSpeech());
                     i++;
                     int pageNumber = pref.getInt("key_name2", -1);
@@ -239,6 +285,17 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                                 exist = true;
                             }
                             break;
+                        case "D'accord, donnez-moi votre numéro d'identification.":
+                            Log.e("Compare", HoC2.getPin().toString()+" <> "+ result.getResolvedQuery().replaceAll("\\s",""));
+                            result.setResolvedQuery(result.getResolvedQuery().replaceAll(" ",""));
+                            result.setResolvedQuery(result.getResolvedQuery().replaceAll("/",""));
+                            result.setResolvedQuery(result.getResolvedQuery().replaceAll("[()]",""));
+                            result.setResolvedQuery(result.getResolvedQuery().toUpperCase().replaceAll("\\s",""));
+                            if(HoC2.getPin().toUpperCase().toString().equals(result.getResolvedQuery())){
+                                indice = 0;
+                                exist = true;
+                            }
+                            break;
 
                         case "Ok, please give me your address postal code.":
                             result.setResolvedQuery(result.getResolvedQuery().replaceAll("-",""));
@@ -256,14 +313,16 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
 
                     }
                     if ((exist == true)&&(signed_in==false)){
-                        result.getFulfillment().setSpeech("Welcome "+HoC2.getUser_name()+", you are signed in");
-                        TTS.speak(result.getFulfillment().getSpeech());
+                        String text = getResources().getString(R.string.welcome_usr);
+                        text = text.replace("name",HoC2.getUser_name());
+                        result.getFulfillment().setSpeech(text);
+                        TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                         signed_in = true;
                         exist = false;
                     }
                     else if (exist == false){
-                        result.getFulfillment().setSpeech("We are sorry we can't sign you in");
-                        TTS.speak(result.getFulfillment().getSpeech());
+                        result.getFulfillment().setSpeech(getResources().getString(R.string.sign_in_issue));
+                        TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                     }
                     commands.add(result.getFulfillment().getSpeech());
                     i++;
@@ -271,71 +330,129 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                     return;
                 }
                 if ((signed_in == true)||(result.getMetadata().getIntentName().equals("Sign in"))
-                        ||(result.getAction().contains("smalltalk"))){
+                        ||(result.getAction().contains("smalltalk"))||(result.getMetadata().getIntentName().equals("web.search"))
+                        ||(result.getMetadata().getIntentName().contains("weather"))
+                        ||(result.getMetadata().getIntentName().contains("reminders"))
+                        ||(result.getMetadata().getIntentName().equals("customize.lang"))){
                     if (result.getAction().contains("smalltalk")){
-                        TTS.speak(result.getFulfillment().getSpeech());
+                        TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                     }
+                    if (result.getMetadata().getIntentName().equals("customize.lang")){
+                        SharedPreferences.Editor editor2 = language.edit();
+                        String saved_lang = language.getString("lang", "");
+                        if(saved_lang.equals("en")){
+                            editor2.putString("lang", "fr");
+                            editor2.commit();
+                            Log.e("Language after", language.getString("lang", ""));
+                        }
+                        else{
+                            editor2.putString("lang", "en");
+                            editor2.commit();
+                            Log.e("Language after", language.getString("lang", ""));
+                        }
+                        TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
+                    }
+                    if (result.getMetadata().getIntentName().equals("web.search")){
+                        result.getFulfillment().setSpeech(getResources().getString(R.string.processing));
+                        TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
+                        String toSearch = result.getParameters().get("q").toString();
+                        toSearch = toSearch.replaceAll("\"", "");
+                        Intent viewSearch = new Intent(Intent.ACTION_WEB_SEARCH);
+                        viewSearch.putExtra(SearchManager.QUERY, toSearch);
+                        startActivity(viewSearch);
+                    }
+                    if (result.getMetadata().getIntentName().contains("reminders.")){
+                        String eve_name = "";
+                        String eve_date = "";
+                        String eve_recc = "";
+                        if (result.getMetadata().getIntentName().equals("reminders.add")){
+                            result.getFulfillment().setSpeech(getResources().getString(R.string.processing));
+                            try {
+                                eve_name = result.getParameters().get("name").toString();
+                            }catch (Exception e){
+                                Log.e("eve_name", ""+e);
+                            }
+                            try {
+                                eve_date = result.getParameters().get("date-time").toString();
+                            }catch (Exception e){
+                                eve_date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Calendar.getInstance().getTime());
+                            }
+                            try {
+                                eve_recc = result.getParameters().get("recurrence").toString();
+                            }catch (Exception e){
+                                Log.e("eve_recc", ""+e);
+                            }
+                            Log.e("Data", eve_name+" <> "+eve_date+" <> "+eve_recc);
+                            eve_date = eve_date.replaceAll("\"", "");
+                            eve_name = eve_name.replaceAll("\"", "");
+                            eve_recc = eve_recc.replaceAll("\"", "");
+                            calendar_event(eve_name, null, eve_date, eve_recc, result);
+                        }
+                    }
+                    if (result.getAction().contains("weather")){
+                        result.getFulfillment().setSpeech(getResources().getString(R.string.processing));
+                        TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
+                        String location = "Ottawa";
+                        try{
+                            location = result.getParameters().get("location").toString();
+                            location = location.replaceAll("\"", "").trim();
+                            location = location.replaceAll(":", " ");
+                            location = location.substring(location.indexOf(" "), location.length()-1);
+                        }catch (Exception e){
+                            Log.e("Error forcast location", ""+e);
+                        }
+                        if (location == "Ottawa"){
+                            try{
+                                location = result.getParameters().get("address").toString();
+                                location = location.replaceAll("\"", "").trim();
+                                location = location.replaceAll(":", " ");
+                                location = location.substring(location.indexOf(" "), location.length()-1);
+                            }catch (Exception e){
+                                Log.e("Error forcast location", ""+e);
+                            }
+                        }
+                        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                        Date date1 = new Date();
+                        String date = dateFormat.format(date1);
+                        try{
+                            date = result.getParameters().get("date-time").toString();
+                            date = date.replaceAll("\"", "");
+                        }catch (Exception e){
+                            Log.e("Error forcast date", ""+e);
+                        }
+                        new getJSON().execute(location);
+                        }
                     if (result.getMetadata().getIntentName().equals("Sign in"))
-                        TTS.speak(result.getFulfillment().getSpeech());
+                        TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
 
-                    if (result.getResolvedQuery().contains("time")){
+                    if (result.getMetadata().getIntentName().contains("time")){
+                        Log.e("time","");
                         Calendar rightNow = Calendar.getInstance();
-                        String  currentTime = "Now it's "+rightNow.get(Calendar.HOUR)+":"+rightNow.get(Calendar.MINUTE);
+                        String  currentTime = getResources().getString(R.string.time).replace("time", rightNow.get(Calendar.HOUR)+":"+rightNow.get(Calendar.MINUTE));
+                        Log.e("time", currentTime);
                         result.getFulfillment().setSpeech(currentTime.toString());
-                        TTS.speak(result.getFulfillment().getSpeech());
+                        TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                     }
                     if (result.getMetadata().getIntentName().contains("member.bus")){
-                        result.getFulfillment().setSpeech("Please wait.");
-                        TTS.speak(result.getFulfillment().getSpeech());
+                        result.getFulfillment().setSpeech(getResources().getString(R.string.wait));
+                        TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                         Calendar sCalendar = Calendar.getInstance();
-                        int hour = sCalendar.getTime().getHours();
                         int minute = sCalendar.getTime().getMinutes();
                         int minute_new = (((int)(minute/10))+1)*10;
                         if(minute_new-minute==1){
-                            result.getFulfillment().setSpeech("Next bus in "+(minute_new-minute)+" minute.");
-                            TTS.speak(result.getFulfillment().getSpeech());
-//                            if (minute_new == 60){
-//                                minute_new = 0;
-//                                hour = hour++;
-//                            }
-                            result.getFulfillment().setSpeech("Next bus in "+(minute_new-minute)+" minute.");
+                            result.getFulfillment().setSpeech(getResources().getString(R.string.bus).replace("xxx", ""+(minute_new-minute)));
+                            TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                         }
                         else {
-                            result.getFulfillment().setSpeech("Next bus in "+(minute_new-minute)+" minutes.");
-                            TTS.speak(result.getFulfillment().getSpeech());
-//                            if (minute_new == 60){
-//                                minute_new = 00;
-//                                hour = hour++;
-//                            }
-                            result.getFulfillment().setSpeech("Next bus in "+(minute_new-minute)+" minute.");
+                            result.getFulfillment().setSpeech(getResources().getString(R.string.buss).replace("xxx", ""+(minute_new-minute)));
+                            TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                         }
                     }
                     if (result.getMetadata().getIntentName().contains("member.now")){
-                        result.getFulfillment().setSpeech("Please wait.");
-                        TTS.speak(result.getFulfillment().getSpeech());
+                        result.getFulfillment().setSpeech(getResources().getString(R.string.wait));
+                        TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                         AsyncTask<String, Void, String> s = null;
                         String data="";
-//                        try{
-//                            s = new Fetch.HttpAsyncTask().execute("http://www.ourcommons.ca");
-//                        }
-//                        catch (Exception e){
-//                        }
-//                        try {
-//                            data = s.get();
-//                        } catch (InterruptedException e) {
-//                            e.printStackTrace();
-//                        } catch (ExecutionException e) {
-//                            e.printStackTrace();
-//                        }
-//                        Log.e("data content", data);
-//                        Pattern pattern = Pattern.compile(".*<span class=\"now-in-the-house-subtitle\">(.*?)</span >.*");
-//                        Matcher matcher = pattern.matcher(data);
-//                        if (matcher.find()) {
-//                            result.getFulfillment().setSpeech(matcher.group(1));
-//                            TTS.speak(result.getFulfillment().getSpeech());
-//                        }
-//                        else Toast.makeText(AIButtonSampleActivity.this, "Nothing to show", Toast.LENGTH_LONG).show();
-//
                         List <String> msgs = new ArrayList<>();
                         msgs.add("The House is currently sitting. Current Member Speaking: The Honourable Pierre Poilievre Conservative.");
                         msgs.add("The House is currently sitting. Current Member Speaking: The Speaker Geoff Regan Liberal.");
@@ -343,20 +460,20 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                         msgs.add("The House is currently sitting. Current Member Speaking: Mark Gerretsen Liberal.");
                         int rand = ThreadLocalRandom.current().nextInt(0, 4);
                         result.getFulfillment().setSpeech(msgs.get(rand));
-                        TTS.speak(result.getFulfillment().getSpeech());
+                        TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                     }
                     if (result.getMetadata().getIntentName().contains("member.menu")){
                         String dayLongName = result.getFulfillment().getSpeech();
                         if (dayLongName.length()==0){
-                            result.getFulfillment().setSpeech("The data base is empty");
-                            TTS.speak(result.getFulfillment().getSpeech());
+                            result.getFulfillment().setSpeech(getResources().getString(R.string.db_empty));
+                            TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                             commands.add(result.getFulfillment().getSpeech());
                             i++;
                             show(result);
                             return;
                         }
-                        result.getFulfillment().setSpeech("Please wait.");
-                        TTS.speak(result.getFulfillment().getSpeech());
+                        result.getFulfillment().setSpeech(getResources().getString(R.string.wait));
+                        TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                         Calendar sCalendar = Calendar.getInstance();
                         if (dayLongName.toUpperCase().equals("TODAY")){
                             dayLongName = sCalendar.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.LONG, Locale.getDefault());
@@ -367,14 +484,13 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                             Log.e("Day", dayLongName);
                         }
                         if ((dayLongName.toUpperCase().equals("SATURDAY"))||(dayLongName.toUpperCase().equals("SUNDAY"))) {
-                            result.getFulfillment().setSpeech("The cafeteria is closed for the weekend.");
-                            TTS.speak(result.getFulfillment().getSpeech());
+                            result.getFulfillment().setSpeech(getResources().getString(R.string.caf_closed));
+                            TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                             commands.add(result.getFulfillment().getSpeech());
                             i++;
                             show(result);
                             return;
                         }
-                        Log.e("Link", uri+"Foods/"+dayLongName);
                         AsyncTask<String, Void, String> s = null;
                         try{
                             s = new Fetch.HttpAsyncTask().execute(uri+"Foods/"+dayLongName);
@@ -392,12 +508,14 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                             e.printStackTrace();
                         }
                         if (HoC_m == null){
-                            result.getFulfillment().setSpeech("The data base is empty");
-                            TTS.speak(result.getFulfillment().getSpeech());
+                            result.getFulfillment().setSpeech(getResources().getString(R.string.db_empty));
+                            TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                         }
                         else{
-                            result.getFulfillment().setSpeech(dayLongName+" we have "+HoC_m.getDescription());
-                            TTS.speak(result.getFulfillment().getSpeech());
+                            String text = getResources().getString(R.string.caf).replace("day", dayLongName);
+                            text = text.replace("food", HoC_m.getDescription());
+                            result.getFulfillment().setSpeech(text);
+                            TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                         }
                     }
                     if (result.getMetadata().getIntentName().contains("member.expense")){
@@ -407,14 +525,28 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                         s = s+"1. Expense claim for in riding mileage submitted the "+dateFormat.format(date)+", status processed amount of 324 credited to your account\n" +
                                 "2. Expense claim for trip to Winnipeg from Ottawa status pending explanation, do you want an officer to call you about this one.";
                         result.getFulfillment().setSpeech(s);
-                        TTS.speak(result.getFulfillment().getSpeech());
+                        TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                     }
-                    if (result.getMetadata().getIntentName().contains("visitor.meet.")){
-                        result.getFulfillment().setSpeech("Please wait.");
-                        TTS.speak(result.getFulfillment().getSpeech());
+                    if (result.getMetadata().getIntentName().contains("visitor.meet.")||(result.getMetadata().getIntentName().equals("visitor.meet.remindd"))){
+                        result.getFulfillment().setSpeech(getResources().getString(R.string.wait));
+                        TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
+                        String ss = "";
+                        try {
+                            ss = result.getParameters().get("meeting_n").toString();
+                            ss = ss.replaceAll("\"", "");
+                            ss = ss.replaceAll( " ", "");
+                        }catch (Exception e){
+                        }
                         AsyncTask<String, Void, String> s = null;
                         try{
-                            s = new Fetch.HttpAsyncTask().execute(uri+"Meetings"+"/"+HoC2.getId());
+                            if(ss!= "") {
+                                s = new Fetch.HttpAsyncTask().execute(uri + "Meetings/GetMeetingsByName/" + HoC2.getId() + "/" + ss);
+                                Log.e("Link" ,uri+"Meetings/GetMeetingsByName/"+HoC2.getId()+"/"+ss);
+                            }
+                            else{
+                                s = new Fetch.HttpAsyncTask().execute(uri+"Meetings/GetMeetingsByIdVisitor/"+HoC2.getId());
+                                Log.e("Link" ,uri+"Meetings/GetMeetingsByIdVisitor/"+HoC2.getId());
+                            }
                         }
                         catch (Exception e){
                         }
@@ -430,20 +562,21 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                         }
                         int min_ind = sort(HoC_m);
                         if (HoC_m.size()==0){
-                            result.getFulfillment().setSpeech("The data base is empty.");
-                            TTS.speak(result.getFulfillment().getSpeech());
+                            result.getFulfillment().setSpeech(getResources().getString(R.string.db_empty));
+                            TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
+                        }
+                        else if(min_ind == -1){
+                            result.getFulfillment().setSpeech(getResources().getString(R.string.db_empty));
+                            TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                         }
                         else{
-
                             if(result.getMetadata().getIntentName().contains("visitor.meet.room")){
-                                String sp = "This is the plan of the floor to get to the meeting's room.\n";
                                 URL1 = HoC_m.get(min_ind).getRoom().getImg();
                                 fotoView = new ImageView(AIButtonSampleActivity.this);
-                                Log.e("Link", URL1);
                                 fotoView.setTag(URL1);
                                 new DownloadImagesTask().execute(fotoView);
-                                result.getFulfillment().setSpeech(sp);
-                                TTS.speak(result.getFulfillment().getSpeech());
+                                result.getFulfillment().setSpeech(getResources().getString(R.string.plan));
+                                TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                                 LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,
                                         LinearLayout.LayoutParams.WRAP_CONTENT);
                                 fotoView.setLayoutParams(layoutParams);
@@ -458,42 +591,63 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                                         .setIcon(R.drawable.iconn)
                                         .show();
                             }
+                            if(result.getMetadata().getIntentName().contains("visitor.meet.remindd")) {
+                                result.getFulfillment().setSpeech(getResources().getString(R.string.processing));
+                                TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
+                                String eve_name, eve_date, eve_note;
 
+                                eve_date = HoC_m.get(min_ind).getDate();
+                                Log.e("eve_date", ""+eve_date.length());
+                                eve_name = HoC_m.get(min_ind).getName();
+                                eve_note = HoC_m.get(min_ind).getDescription();
+                                Log.e("Data", eve_name+" <> "+eve_date);
+                                eve_date = eve_date.replaceAll("\"", "");
+                                eve_name = eve_name.replaceAll("\"", "");
+                                calendar_event(eve_name, eve_note, eve_date, null, result);
+                            }
                             if(result.getMetadata().getIntentName().contains("visitor.meet.last")){
-                                String sp="";
+                                String sp= getResources().getString(R.string.next_meeting);
                                 try{
-                                    sp= "Your next meeting is on "+HoC_m.get(min_ind).getDate()+" with "+HoC_m.get(min_ind).getChair().getName()
-                                        +", "+HoC_m.get(min_ind).getRoom().getName()+" in "+HoC_m.get(min_ind).getRoom().getBuilding()+", floor number "+HoC_m.get(min_ind).
-                                        getRoom().getFloor()+" and it's about "+HoC_m.get(min_ind).getDescription();}
+                                    sp = sp.replace(" date", HoC_m.get(min_ind).getDate());
+                                    sp = sp.replace(" chair_name", " "+HoC_m.get(min_ind).getChair().getName()+" ");
+                                    sp = sp.replace(" room_name ", " "+HoC_m.get(min_ind).getRoom().getName()+" ");
+                                    sp = sp.replace(" room_building ", " "+HoC_m.get(min_ind).getRoom().getBuilding()+" ");
+                                    sp = sp.replace(" room_floor ", " "+HoC_m.get(min_ind).getRoom().getFloor()+" ");
+                                    sp = sp.replace(" description", " "+HoC_m.get(min_ind).getDescription()+" ");
+
+//                                    sp= "Your next meeting is on "+HoC_m.get(min_ind).getDate()+" with "+HoC_m.get(min_ind).getChair().getName()
+//                                        +", "+HoC_m.get(min_ind).getRoom().getName()+" in "+HoC_m.get(min_ind).getRoom().getBuilding()+", floor number "+HoC_m.get(min_ind).
+//                                        getRoom().getFloor()+" and it's about "+HoC_m.get(min_ind).getDescription();
+                                }
                                 catch (Exception e){
-                                    sp = "The database is empty.";
+                                    sp = getResources().getString(R.string.db_empty);
                                 }
                                 result.getFulfillment().setSpeech(sp);
-                                TTS.speak(result.getFulfillment().getSpeech());
+                                TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                             }
                             if(result.getMetadata().getIntentName().contains("visitor.meet.held")){
-                                String sp = "Your next meeting is in "+HoC_m.get(min_ind).getRoom().getName();
-                                result.getFulfillment().setSpeech(sp);
-                                TTS.speak(result.getFulfillment().getSpeech());
+//                                String sp = getResources().getString(R.string.meet_room);
+//                                sp = sp.replace("room_name", HoC_m.get(min_ind).getRoom().getName());
+                                result.getFulfillment().setSpeech(getResources().getString(R.string.meet_room).replace("room_name", HoC_m.get(min_ind).getRoom().getName()));
+                                TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                             }
 
                             if(result.getMetadata().getIntentName().contains("visitor.meet.when")){
-                                String sp = "Your next meeting is on "+HoC_m.get(min_ind).getDate()+" about "+HoC_m.get(min_ind).getDescription();
+                                String sp = getResources().getString(R.string.meet_brief);
+                                sp = sp.replace("date", HoC_m.get(min_ind).getDate());
+                                sp = sp.replace("description", HoC_m.get(min_ind).getDescription());
                                 result.getFulfillment().setSpeech(sp);
-                                TTS.speak(result.getFulfillment().getSpeech());
+                                TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                             }
 
                             if(result.getMetadata().getIntentName().contains("visitor.meet.who")){
-                                String sp = "The next meeting will be chaired by  "+HoC_m.get(min_ind).getChair().getName();
-                                result.getFulfillment().setSpeech(sp);
-                                TTS.speak(result.getFulfillment().getSpeech());
+                                result.getFulfillment().setSpeech(getResources().getString(R.string.meet_chair).replace("chair_name", HoC_m.get(min_ind).getChair().getName()));
+                                TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                             }
                             if(result.getMetadata().getIntentName().contains("visitor.meet.more")){
                                 urll = HoC_m.get(min_ind).getUri();
-                                String sp = "For more information press here.";
-                                Log.e("Link for meeting", ""+urll+" <> "+HoC_m.get(min_ind).getId()+" <> "+HoC_m.get(min_ind).getDescription()+min_ind);
-                                result.getFulfillment().setSpeech(sp);
-                                TTS.speak(result.getFulfillment().getSpeech());
+                                result.getFulfillment().setSpeech(getResources().getString(R.string.more));
+                                TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                             }
                         }
                         commands.add(result.getFulfillment().getSpeech());
@@ -506,8 +660,8 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                         x = x.substring(x.indexOf(s1)+s1.length()+1);
                         String ind =  "";
                         ind = x.replaceAll("\\s+", "");
-                        result.getFulfillment().setSpeech("Please wait.");
-                        TTS.speak(result.getFulfillment().getSpeech());
+                        result.getFulfillment().setSpeech(getResources().getString(R.string.wait));
+                        TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                         AsyncTask<String, Void, String> s = null;
                         try{
                             s = new Fetch.HttpAsyncTask().execute(uri+"Offices/GetOfficeByIdName/"+ind);
@@ -526,18 +680,19 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                             e.printStackTrace();
                         }
                         if (HoC_offices.size()==0){
-                            result.getFulfillment().setSpeech("The switch does not exist or the database is empty.");
-                            TTS.speak(result.getFulfillment().getSpeech());
+                            result.getFulfillment().setSpeech(getResources().getString(R.string.switch_prob));
+                            TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                         }
                         else{
-                            String sp="";
+                            String sp = getResources().getString(R.string.office_switch);
                             try{
-                                sp = "The office "+HoC_offices.get(0).getDescription()+ " is served by switch "+HoC_offices.get(0).getSwitcher().getName()+".";
+                                sp = sp.replace("office_desc", HoC_offices.get(0).getDescription());
+                                sp = sp.replace("office_name", HoC_offices.get(0).getSwitcher().getName());
                                 result.getFulfillment().setSpeech(sp);
-                                TTS.speak(result.getFulfillment().getSpeech());}
+                                TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());}
                             catch(Exception e){
-                                result.getFulfillment().setSpeech("The data base is empty");
-                                TTS.speak(result.getFulfillment().getSpeech());
+                                result.getFulfillment().setSpeech(getResources().getString(R.string.db_empty));
+                                TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                             }
                         }
                         commands.add(result.getFulfillment().getSpeech());
@@ -560,8 +715,8 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                         }
                         catch (Exception e){
                         }
-                        result.getFulfillment().setSpeech("Please wait.");
-                        TTS.speak(result.getFulfillment().getSpeech());
+                        result.getFulfillment().setSpeech(getResources().getString(R.string.wait));
+                        TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                         AsyncTask<String, Void, String> s = null;
                         try{
                             s = new Fetch.HttpAsyncTask().execute(uri+"Offices/GetMOfficeBySwName/"+ind);
@@ -579,8 +734,8 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                             e.printStackTrace();
                         }
                         if (HoC_sw.size()==0){
-                            result.getFulfillment().setSpeech("The switch does not exist or the database is empty.");
-                            TTS.speak(result.getFulfillment().getSpeech());
+                            result.getFulfillment().setSpeech(getResources().getString(R.string.switch_prob));
+                            TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                         }
                         else{
                             String sp = "Switch "+ind+ " serves offices: ";
@@ -591,7 +746,7 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                                     sp = sp+HoC_sw.get(j).getDescription()+".";
                             }
                             result.getFulfillment().setSpeech(sp);
-                            TTS.speak(result.getFulfillment().getSpeech());
+                            TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                         }
                         commands.add(result.getFulfillment().getSpeech());
                         i++;
@@ -604,8 +759,8 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                             Toast.makeText(AIButtonSampleActivity.this, "Tell me again", Toast.LENGTH_LONG).show();
                             return;
                         }
-                        result.getFulfillment().setSpeech("Please wait.");
-                        TTS.speak(result.getFulfillment().getSpeech());
+                        result.getFulfillment().setSpeech(getResources().getString(R.string.wait));
+                        TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                         AsyncTask<String, Void, String> s = null;
                         try{
                             s = new Fetch.HttpAsyncTask().execute(uri+"Interventions/GetInterventionByTechnition/"+ind);
@@ -623,9 +778,10 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                             e.printStackTrace();
                         }
                         if (HoC_sw.size()==0){
-                            result.getFulfillment().setSpeech("The data base is empty.");
-                            TTS.speak(result.getFulfillment().getSpeech());
+                            result.getFulfillment().setSpeech(getResources().getString(R.string.db_empty));
+                            TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                         }
+                        //Todo add the french lanquage here. need some work
                         else{
                             String sp = "Techninican "+ind+" has performed the following:\n";
                             for (int j=0; j<HoC_sw.size(); j++){
@@ -633,7 +789,7 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                                         HoC_sw.get(j).getswitcher().getName()+".\n";
                             }
                             result.getFulfillment().setSpeech(sp);
-                            TTS.speak(result.getFulfillment().getSpeech());
+                            TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                         }
                         commands.add(result.getFulfillment().getSpeech());
                         i++;
@@ -648,8 +804,8 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                         ind = ind.replaceFirst(":","");
                         if (ind.indexOf(" ")!=-1)
                             ind = ind.substring(0, ind.indexOf(" "));
-                        result.getFulfillment().setSpeech("Please wait.");
-                        TTS.speak(result.getFulfillment().getSpeech());
+                        result.getFulfillment().setSpeech(getResources().getString(R.string.wait));
+                        TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                         AsyncTask<String, Void, String> s = null;
                         try{
                             s = new Fetch.HttpAsyncTask().execute(uri+"Interventions/GetInterventionBySwName/"+ind);
@@ -667,8 +823,8 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                             e.printStackTrace();
                         }
                         if (HoC_sw.size()==0){
-                            result.getFulfillment().setSpeech("The data base is empty.");
-                            TTS.speak(result.getFulfillment().getSpeech());
+                            result.getFulfillment().setSpeech(getResources().getString(R.string.db_empty));
+                            TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                         }
                         else{
                             int min_ind = sort_interv(HoC_sw);
@@ -676,7 +832,7 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                                     HoC_sw.get(min_ind).gettechnician().getId()+" on "+HoC_sw.get(min_ind).getDate()+" for "+HoC_sw.
                                     get(min_ind).getDescription()+".";
                             result.getFulfillment().setSpeech(sp);
-                            TTS.speak(result.getFulfillment().getSpeech());
+                            TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                         }
                         commands.add(result.getFulfillment().getSpeech());
                         i++;
@@ -686,9 +842,9 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                     show(result);
             }
                 else {
-                    result.getFulfillment().setSpeech("I'm sorry i can't help you until you sign in.");
+                            result.getFulfillment().setSpeech(getResources().getString(R.string.sign_in));
                     show(result);
-                    TTS.speak(result.getFulfillment().getSpeech());
+                    TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                 }
             }
 
@@ -719,20 +875,19 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
         final Intent intent = new Intent(this, cls);
         startActivity(intent);
     }
-    public String parser(Date x){
-        SimpleDateFormat spf = new SimpleDateFormat("dd MMMM yyyy");
+    public static String parser(Date x){
+        SimpleDateFormat spf = new SimpleDateFormat("dd MMMM yyyy HH:mm");
         String newDateString = spf.format(x);
         return newDateString;
     }
     public String parse_from_db(String x){
-        String d = x.substring(0, x.indexOf("T"));
-        DateFormat originalFormat = new SimpleDateFormat("yyyy-MM-dd");
-        DateFormat targetFormat = new SimpleDateFormat("d MMMM yyyy");
+        DateFormat originalFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+        DateFormat targetFormat = new SimpleDateFormat("d MMMM yyyy HH:mm");
         Date date = null;
         try {
-            date = originalFormat.parse(d);
+            date = originalFormat.parse(x);
         } catch (ParseException e) {
-            e.printStackTrace();
+            Log.e("3asba", ""+e);
         }
         String formattedDate = targetFormat.format(date);
         return  formattedDate;
@@ -817,6 +972,20 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
         }
         return Hoc;
     }
+    public forecast string_json_W(String res) throws JSONException
+    {
+        forecast Hoc = new forecast();
+        forecast jsonArr = new Gson().fromJson(res, forecast.class);
+        if (jsonArr != null) {
+            Hoc.setWeather(new weather[]{jsonArr.getWeather()[0]});
+            Hoc.setTemp_hum_press(jsonArr.getTemp_hum_press());
+            Hoc.setWind(jsonArr.getWind());
+            Hoc.setSys(jsonArr.getSys());
+            Hoc.setVisibility(jsonArr.getVisibility());
+            Hoc.setName(jsonArr.getName());
+        }
+        return Hoc;
+    }
     public List<Users> string_json(String res) throws JSONException
     {
         List<Users> Hoc = new ArrayList<>();
@@ -892,13 +1061,14 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                 if (null != bmp)
                     return bmp;
 
-            }catch(Exception e){}
+            }catch(Exception e){
+            }
             return bmp;
         }
     }
     public int sort (List<Meetings> abc) {
         int k=-1;
-        DateFormat format = new SimpleDateFormat("d MMMM yyyy");
+        DateFormat format = new SimpleDateFormat("d MMMM yyyy mm:ss");
         final long now = System.currentTimeMillis();
         List<Date> dates = new ArrayList<Date>();
         for(int a=0; a<abc.size(); a++){
@@ -911,6 +1081,7 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                 e.printStackTrace();
             }
         }
+        try{
         Date closest = Collections.min(dates, new Comparator<Date>() {
             @TargetApi(Build.VERSION_CODES.KITKAT)
             public int compare(Date d1, Date d2) {
@@ -924,11 +1095,14 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                 k = j;
             }
         }
+        }catch (Exception e){
+            k = 1;
+        }
         return k;
     }
     public int sort_interv(List<Interventions> abc) {
         int k=-1;
-        DateFormat format = new SimpleDateFormat("d MMMM yyyy");
+        DateFormat format = new SimpleDateFormat("d MMMM yyyy mm:ss");
         final long now = System.currentTimeMillis();
         List<Date> dates = new ArrayList<Date>();
         for(int a=0; a<abc.size(); a++){
@@ -986,7 +1160,123 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
         });
 
     }
+    class getJSON extends AsyncTask<String, Void, Void> {
+            @Override
+            protected void onPreExecute() {
+                super.onPreExecute();
 
+            }
+            @Override
+            protected Void doInBackground(String... params) {
+                try {
+                    URL url = new URL("http://api.openweathermap.org/data/2.5/weather?q="+params[0].trim()+"&APPID=ea574594b9d36ab688642d5fbeab847e");
+                    Log.e("URL", url.toString());
+                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                    StringBuffer json = new StringBuffer(1024);
+                    String tmp = "";
+                    while((tmp = reader.readLine()) != null)
+                        json.append(tmp).append("\n");
+                    reader.close();
+                    data_weather = new JSONObject(json.toString());
+                    if(data_weather.getInt("cod") != 200) {
+                        System.out.println("Cancelled");
+                        return null;
+                    }
+                } catch (Exception e) {
+                    System.out.println("Exception "+ e.getMessage());
+                    return null;
+                }
+                return null;
+            }
+            @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+            @Override
+            protected void onPostExecute(Void Void) {
+                if(data_weather!=null){
+                    Log.e("my weather received",data_weather.toString());
+                    forecast f = null;
+                    try {
+                        f = string_json_W(data_weather.toString());
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    f.getWeather()[0].setIcon("http://openweathermap.org/img/w/"+f.getWeather()[0].getIcon()+".png");
+                    f.getTemp_hum_press().setTemp(f.getTemp_hum_press().getTemp()-273.15);
+                    f.getTemp_hum_press().setTemp_max(f.getTemp_hum_press().getTemp_max()-273.15);
+                    f.getTemp_hum_press().setTemp_min(f.getTemp_hum_press().getTemp_min()-273.15);
+                    f.getWind().setSpeed(f.getWind().getSpeed()*3.6);
+                    DateFormat sdf = new SimpleDateFormat("dd MMMM HH:mm");
+                    String sunrise = sdf.format(new Date(f.getSys().getSunrise()* 1000L));
+                    String sunset  = sdf.format(new Date(f.getSys().getSunset() * 1000L));
+                    java.text.DecimalFormat df = new java.text.DecimalFormat("0.#");
+                    AlertDialog.Builder builder;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        builder = new AlertDialog.Builder(AIButtonSampleActivity.this, android.R.style.Theme_Material_Dialog_Alert);
+                    } else {
+                        builder = new AlertDialog.Builder(AIButtonSampleActivity.this);
+                    }
+
+                    builder.setView(R.layout.forecast_w);
+                    LayoutInflater inflater = AIButtonSampleActivity.this.getLayoutInflater();
+                    View dialogView = inflater.inflate(R.layout.forecast_w, null);
+                    builder.setView(dialogView);
+                    loc = (TextView) dialogView.findViewById(R.id.location);
+                    TextView temp = (TextView) dialogView.findViewById(R.id.temp);
+                    TextView temp_min = (TextView) dialogView.findViewById(R.id.tempMin);
+                    TextView temp_max = (TextView) dialogView.findViewById(R.id.tempMax);
+                    TextView desc_w = (TextView) dialogView.findViewById(R.id.descrWeather);
+                    TextView wind_speed = (TextView) dialogView.findViewById(R.id.windSpeed);
+                    TextView wind_deg = (TextView) dialogView.findViewById(R.id.windDeg);
+                    TextView humidity = (TextView) dialogView.findViewById(R.id.humidity);
+                    TextView pressure = (TextView) dialogView.findViewById(R.id.pressure);
+                    TextView visibility = (TextView) dialogView.findViewById(R.id.visibility);
+                    ImageView imageWea = (ImageView) dialogView.findViewById(R.id.imgWeather);
+                    TextView sun_r = (TextView) dialogView.findViewById(R.id.sunrise);
+                    TextView sun_s = (TextView) dialogView.findViewById(R.id.sunset);
+                    desc_w.setText(f.getWeather()[0].getDescription());
+                    temp_min.setText(""+df.format(f.getTemp_hum_press().getTemp_min())+"°");
+                    temp_max.setText(""+df.format(f.getTemp_hum_press().getTemp_max())+"°");
+                    temp.setText(""+df.format(f.getTemp_hum_press().getTemp()));
+                    wind_speed.setText(""+df.format(f.getWind().getSpeed())+" Km/h");
+                    wind_deg.setText(""+f.getWind().getDeg()+"°");
+                    visibility.setText(""+(df.format(f.getVisibility()/1000))+" Km");
+                    humidity.setText(f.getTemp_hum_press().getHumidity()+" %");
+                    pressure.setText(""+f.getTemp_hum_press().getPressure()+" mbar");
+                    sun_r.setText(sunrise);
+                    sun_s.setText(sunset);
+                    loc.setText(f.getName()+", "+f.getSys().getCountry());
+                    switch(f.getWeather()[0].getMain()) {
+                        case "Clouds":
+                            imageWea.setImageResource(R.drawable.clouds);
+                            break;
+                        case "Clear":
+                            imageWea.setImageResource(R.drawable.clear);
+                            break;
+                        case "Rain":
+                            imageWea.setImageResource(R.drawable.raining);
+                            break;
+                        case "Snow":
+                            imageWea.setImageResource(R.drawable.snow);
+                            break;
+                    }
+                    builder.setTitle("Forecast")
+                            .setIcon(R.drawable.fff)
+                            .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int which) {
+                                }
+                            });
+                    final AlertDialog dialog = builder.create();
+                    dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.parseColor("#2072ac")));
+                    dialog.setOnShowListener( new DialogInterface.OnShowListener() {
+                        @Override
+                        public void onShow(DialogInterface arg0) {
+                            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.parseColor("#ffffff"));
+                        }
+                    });
+                    dialog.show();
+                }
+            }
+        }
     boolean doubleBackToExitPressedOnce = false;
     @Override
     public void onBackPressed() {
@@ -999,5 +1289,72 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
         this.doubleBackToExitPressedOnce = true;
         Toast.makeText(this, "Please click BACK again to exit", Toast.LENGTH_SHORT).show();
         new Handler().postDelayed(new Runnable() {@Override public void run() {doubleBackToExitPressedOnce=false;}}, 2000);
+    }
+    public void calendar_event(String name, String note, String date_s, String recc, Result result){
+        //Date date = parse(date_s);
+        SimpleDateFormat f = new SimpleDateFormat("dd MMMM yyyy HH:mm");
+        long milliseconds = 0;
+        String dateFormatted = "";
+        try {
+            Date d = f.parse(date_s);
+            d.setHours(d.getHours()-1);
+            milliseconds = d.getTime();
+            Date date = null;
+            dateFormatted = f.format(d);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        Log.e("Dates compare", date_s+" <> "+dateFormatted);
+        String unity, notif;
+        unity = "";
+        notif = "";
+        try{
+            unity = result.getParameters().get("unity").toString();
+            unity = unity.replaceAll("\"", "");
+            Log.e("unity", unity);
+        }catch (Exception e){
+            Log.e("unity", ""+e);
+        }
+        try{
+            notif = result.getParameters().get("notify").toString();
+            notif = notif.replaceAll("\"", "");
+            Log.e("notify", notif   );
+        }catch (Exception e){
+            Log.e("notify", ""+e);
+        }
+        Intent intent = new Intent(Intent.ACTION_EDIT);
+        intent.setType("vnd.android.cursor.item/event");
+        intent.putExtra("title", name);
+        intent.putExtra("note", note);
+        if ((unity.equals("hour"))&&(Integer.parseInt(notif)!=0)){
+            intent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, milliseconds);
+            intent.putExtra(CalendarContract.EXTRA_EVENT_END_TIME, (milliseconds + (3600 * 1000)));
+        }
+        if ((unity.equals("minute"))&&(Integer.parseInt(notif)!=0)){
+            intent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, milliseconds);
+            intent.putExtra(CalendarContract.EXTRA_EVENT_END_TIME, (milliseconds + (3600 * 1000)));
+        }
+        else{
+            intent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, milliseconds + (3600 * 1000));
+            intent.putExtra(CalendarContract.EXTRA_EVENT_END_TIME, milliseconds + (2*3600 * 1000));
+        }
+        //Toast.makeText(AIButtonSampleActivity.this, ""+notif, Toast.LENGTH_LONG).show();
+        startActivity(intent);
+    }
+    public static Date parse(String d) {
+        Date date  = null;
+        if (d != null) {
+            for (String parse : formats) {
+                SimpleDateFormat sdf = new SimpleDateFormat(parse);
+                sdf.setLenient(false);
+                try {
+                    d = d.replace("\"", "");
+                    date = sdf.parse(d);
+                    break;
+                } catch (ParseException e) {
+                }
+            }
+        }
+        return date;
     }
 }

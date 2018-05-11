@@ -13,11 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ai.boubaker.hoc;
-
 import java.lang.String;
-
 public class LanguageConfig {
     private final String languageCode;
     private final String accessToken;

@@ -78,11 +78,12 @@ public class AIServiceSampleActivity extends BaseActivity
 
         Spinner spinner = (Spinner) findViewById(R.id.selectLanguageSpinner);
         final ArrayAdapter<LanguageConfig> languagesAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, Config.languages);
+        Log.e("Languages list", languagesAdapter.toString());
         spinner.setAdapter(languagesAdapter);
         spinner.setOnItemSelectedListener(this);
     }
 
-    private void initService(final LanguageConfig selectedLanguage) {
+    public void initService(final LanguageConfig selectedLanguage) {
         final AIConfiguration.SupportedLanguages lang = AIConfiguration.SupportedLanguages.fromLanguageTag(selectedLanguage.getLanguageCode());
         final AIConfiguration config = new AIConfiguration(selectedLanguage.getAccessToken(),
                 lang,
@@ -179,7 +180,7 @@ public class AIServiceSampleActivity extends BaseActivity
 
                 final String speech = result.getFulfillment().getSpeech();
                 Log.i(TAG, "Speech: " + speech);
-                TTS.speak(speech);
+                TTS.speak("", speech);
 
                 final Metadata metadata = result.getMetadata();
                 if (metadata != null) {

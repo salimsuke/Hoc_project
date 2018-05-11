@@ -86,7 +86,7 @@ public class AIDialogSampleActivity extends BaseActivity implements AIDialog.AID
                 Log.i(TAG, "Action: " + result.getAction());
                 final String speech = result.getFulfillment().getSpeech();
                 Log.i(TAG, "Speech: " + speech);
-                TTS.speak(speech);
+                TTS.speak(null, speech);
 
                 final Metadata metadata = result.getMetadata();
                 if (metadata != null) {

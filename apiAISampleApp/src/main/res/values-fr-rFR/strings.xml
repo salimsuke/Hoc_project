@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">HoC assist</string>
+    <string name="signed_in">Vous êtes déjà connecté.</string>
+    <string name="signed_out">Vous êtes déjà déconnecté.</string>
+    <string name="welcome_usr">Bienvenue name, vous êtes connecté.</string>
+    <string name="sign_in_issue">Nous sommes désolés de ne pas pouvoir vous connecter.</string>
+    <string name="processing">Traitement de votre recherche..</string>
+    <string name="time">Maintenant c\'est time.</string>
+    <string name="bus">Prochain bus en xxx minute.</string>
+    <string name="buss">Prochain bus en xxx minutes.</string>
+    <string name="wait">Attendez s\'il vous plaît.</string>
+    <string name="db_empty">La base de données est vide.</string>
+    <string name="caf_closed">La cafétéria est fermée pour le week-end.</string>
+    <string name="caf">day nous avons food.</string>
+    <string name="plan">C\'est le plan de l\'étage pour se rendre à la salle de réunion.\n</string>
+    <string name="next_meeting">Votre prochaine réunion est le date avec chair_name, room_name dans room_building étage room_floor et il s\'agit de description.</string>
+    <string name="meet_room">Votre prochaine réunion est dans room_name.</string>
+    <string name="meet_brief">Votre prochaine réunion est le date à propos description.</string>
+    <string name="meet_chair">La prochaine réunion sera présidée par chair_name.</string>
+    <string name="more">Pour plus d\'informations, cliquez ici.</string>
+    <string name="switch_prob">Le commutateur n\'existe pas ou la base de données est vide.</string>
+    <string name="office_switch">Le bureau office_desc est servi par le commutateur office_name.</string>
+    <string name="sign_in">Je suis desolé, je ne peux pas vous aidez avant de se connecter.</string>
+    <!--<string name="switch_office"></string>-->
+</resources>
