@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <color name="icon_orange_color">#38652d</color>
-    <color name="mic_button_halo">#20000000</color>
-    <color name="main_bg_color">#38652d</color>
-
-    <color name="aidialog_background">#ffffffff</color>
-
-</resources>
