@@ -10,7 +10,7 @@ android {
         targetSdkVersion 26
         versionCode 1
         versionName "1.0"
-        flavorDimensions "production"
+        flavorDimensions "production","development"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -31,15 +31,17 @@ android {
             /*Do not change this app id as App is already live with this specified application id*/
             applicationId "ai.boubaker.hoc"
             buildConfigField 'String', 'BASE_URL', '"https://aiassistantserver.azurewebsites.net/api/"'
+            resValue "string", "app_name", "HoC Assistant"
+
         }
 
-//        /*Creating development environment for code development and testing purpose*/
-//        development {
-//            dimension "development"
-//            applicationId "ai.boubaker.hoc.dev"
-//            buildConfigField 'String', 'BASE_URL', '"https://qa.aiassistantserver.azurewebsites.net/api/"'
-//            resValue "string", "app_name", "HoC Assistant-QA"
-//        }
+        /*Creating development environment for code development and testing purpose*/
+        development {
+            dimension "development"
+            applicationId "ai.boubaker.hoc.dev"
+            buildConfigField 'String', 'BASE_URL', '"https://qa.aiassistantserver.azurewebsites.net/api/"'
+            resValue "string", "app_name", "HoC Assistant-QA"
+        }
     }
     packagingOptions {
         exclude 'META-INF/DEPENDENCIES'
