@@ -2,14 +2,13 @@ apply plugin: 'com.android.library'
 apply plugin: 'com.neenbedankt.android-apt'
 
 android {
-    compileSdkVersion Integer.parseInt(project.ANDROID_BUILD_SDK_VERSION)
-    buildToolsVersion project.ANDROID_BUILD_TOOLS_VERSION
-
+    compileSdkVersion 26
+    buildToolsVersion '26.0.1'
     defaultConfig {
-        minSdkVersion Integer.parseInt(project.ANDROID_BUILD_MIN_SDK_VERSION)
-        targetSdkVersion Integer.parseInt(project.ANDROID_BUILD_TARGET_SDK_VERSION)
-        versionCode Integer.parseInt(project.VERSION_CODE)
-        versionName project.VERSION_NAME
+        minSdkVersion 21
+        targetSdkVersion 26
+        versionCode 1
+        versionName 'AILib'
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_7
@@ -18,10 +17,10 @@ android {
     buildTypes {
         release {
             // proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
-            buildConfigField "int", "TESTS_SDK", "22"
+            buildConfigField "int", "TESTS_SDK", "24"
         }
         debug{
-            buildConfigField "int", "TESTS_SDK", "22"
+            buildConfigField "int", "TESTS_SDK", "24"
         }
     }
     productFlavors {
@@ -33,18 +32,19 @@ android {
 
 dependencies {
     repositories {
-        mavenLocal()
+        maven {
+            url "https://maven.google.com"
+        }
         mavenCentral()
     }
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile 'com.android.support:support-v4:23.2.1'
+    compile fileTree(include: ['*.jar'], dir: 'libs')
+    compile 'com.android.support:support-v4:26.0.1'
     compile 'com.squareup.picasso:picasso:2.5.2'
     compile 'ai.api:libai:1.6.11'
-
     testCompile 'org.slf4j:slf4j-android:1.7.25'
-    testCompile "junit:junit:4.12"
-    testCompile "org.assertj:assertj-core:1.7.0"
-    testCompile "org.robolectric:robolectric:3.1.2"
+    testCompile 'junit:junit:4.12'
+    testCompile 'org.assertj:assertj-core:1.7.0'
+    testCompile 'org.robolectric:robolectric:3.1.2'
 }
 
 apply from: '../gradle-mvn-push.gradle'

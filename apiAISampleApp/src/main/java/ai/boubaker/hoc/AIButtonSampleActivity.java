@@ -100,6 +100,10 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_aibutton_sample);
         getSupportActionBar().hide();
+
+        // initialize TTS
+        TTS.init(getApplicationContext());
+
         pref =      getApplicationContext().getSharedPreferences("Identif", MODE_PRIVATE);
         language =  getApplicationContext().getSharedPreferences("lang", MODE_PRIVATE);
         editor = pref.edit();
@@ -140,6 +144,14 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
         super.onPause();
             aiButton.pause();
     }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        checkAudioRecordPermission();
+    }
+
 
     @Override
     protected void onResume() {

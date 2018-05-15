@@ -31,12 +31,12 @@ import android.view.animation.Transformation;
 
 import java.util.List;
 
+import ai.api.R;
 import ai.api.android.AIConfiguration;
 import ai.api.AIListener;
 import ai.api.android.AIService;
 import ai.api.AIServiceException;
 import ai.api.PartialResultsListener;
-import ai.api.R;
 import ai.api.RequestExtras;
 import ai.api.model.AIError;
 import ai.api.model.AIRequest;

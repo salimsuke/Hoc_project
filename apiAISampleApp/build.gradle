@@ -1,47 +1,78 @@
 apply plugin: 'com.android.application'
-apply plugin: 'com.neenbedankt.android-apt'
 
 android {
-    compileSdkVersion Integer.parseInt(project.ANDROID_BUILD_SDK_VERSION)
-    buildToolsVersion project.ANDROID_BUILD_TOOLS_VERSION
+    compileSdkVersion 26
     useLibrary 'org.apache.http.legacy'
+    flavorDimensions "production"
     defaultConfig {
-        applicationId 'ai.boubaker.hoc'
-        manifestPlaceholders = [HOCKEYAPP_APP_ID: "d752ee4165514fdda5397a9436dddccb"]
-        //minSdkVersion Integer.parseInt(project.ANDROID_BUILD_MIN_SDK_VERSION)
-        minSdkVersion 9
-        targetSdkVersion Integer.parseInt(project.ANDROID_BUILD_TARGET_SDK_VERSION)
-        versionCode Integer.parseInt(project.VERSION_CODE)
-        versionName project.VERSION_NAME
+        applicationId "ai.boubaker.hoc"
+        minSdkVersion 21
+        targetSdkVersion 26
+        versionCode 1
+        versionName "1.0"
+        flavorDimensions "production"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
         release {
-            //proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-    productFlavors {
+    lintOptions {
+        checkReleaseBuilds false
+        abortOnError false
     }
 
-    packagingOptions {
+    productFlavors {
+        /*Creating production environment for release app on app store also to work with prod entities*/
+        production {
+            dimension "production"
+            /*Do not change this app id as App is already live with this specified application id*/
+            applicationId "ai.boubaker.hoc"
+            buildConfigField 'String', 'BASE_URL', '"https://aiassistantserver.azurewebsites.net/api/"'
+        }
+
+//        /*Creating development environment for code development and testing purpose*/
+//        development {
+//            dimension "development"
+//            applicationId "ai.boubaker.hoc.dev"
+//            buildConfigField 'String', 'BASE_URL', '"https://qa.aiassistantserver.azurewebsites.net/api/"'
+//            resValue "string", "app_name", "HoC Assistant-QA"
+//        }
     }
+    packagingOptions {
+        exclude 'META-INF/DEPENDENCIES'
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/license.txt'
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/NOTICE.txt'
+        exclude 'META-INF/notice.txt'
+        exclude 'META-INF/ASL2.0'
+    }
+    buildToolsVersion '26.0.2'
 }
 
 repositories {
     mavenLocal()
     mavenCentral()
-
+    google()
+    jcenter()
     maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
 
 }
 
+
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile fileTree(include: ['*.jar'], dir: 'libs')
     compile 'com.squareup.picasso:picasso:2.5.2'
-    compile 'com.android.support:appcompat-v7:23.2.1'
+    compile 'ai.api:sdk:2.0.7@aar'
+    compile 'ai.api:libai:1.6.12'
+    compile 'com.android.support:appcompat-v7:26.1.0'
     compile 'org.apache.httpcomponents:httpcore:4.4.1'
     compile 'org.apache.httpcomponents:httpclient:4.5'
-    // compile 'ai.api:sdk:2.0.7@aar'
-    // this line is for testing purposes
-    compile project(':ailib')
+    compile 'com.android.volley:volley:1.1.0'
+    compile 'com.google.code.gson:gson:2.8.2'
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
 }

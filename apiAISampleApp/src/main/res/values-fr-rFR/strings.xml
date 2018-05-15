@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">HoC assist</string>
+    <string name="app_name">HoC Assistant</string>
     <string name="signed_in">Vous êtes déjà connecté.</string>
     <string name="signed_out">Vous êtes déjà déconnecté.</string>
     <string name="welcome_usr">Bienvenue name, vous êtes connecté.</string>
