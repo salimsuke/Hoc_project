@@ -5,13 +5,14 @@ android {
     useLibrary 'org.apache.http.legacy'
     flavorDimensions "production"
     defaultConfig {
-        applicationId "ai.boubaker.hoc"
+        applicationId 'com.phoeniciait.hocassistant'
         minSdkVersion 21
         targetSdkVersion 26
         versionCode 1
         versionName "1.0"
         flavorDimensions "production","development"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        manifestPlaceholders = [HOCKEYAPP_APP_ID: "53bc280ea19c4b7985fbb570ded4017d"]
     }
     buildTypes {
         release {
@@ -32,9 +33,7 @@ android {
             applicationId "ai.boubaker.hoc"
             buildConfigField 'String', 'BASE_URL', '"https://aiassistantserver.azurewebsites.net/api/"'
             resValue "string", "app_name", "HoC Assistant"
-
         }
-
         /*Creating development environment for code development and testing purpose*/
         development {
             dimension "development"
@@ -77,6 +76,7 @@ dependencies {
     compile 'com.android.volley:volley:1.1.0'
     compile 'com.google.code.gson:gson:2.8.2'
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
-    compile "com.android.support:design:26.1.0"
+    compile 'com.android.support:design:26.1.0'
+    compile 'net.hockeyapp.android:HockeySDK:5.1.0'
 
 }
