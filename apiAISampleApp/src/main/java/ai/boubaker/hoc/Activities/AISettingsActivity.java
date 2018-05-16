@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ai.boubaker.hoc;
+package ai.boubaker.hoc.Activities;
 
 import android.os.Bundle;
 import android.view.View;
@@ -23,6 +23,8 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 
 import ai.api.sample.R;
+import ai.boubaker.hoc.AIApplication;
+import ai.boubaker.hoc.Utils.SettingsManager;
 
 public class AISettingsActivity extends BaseActivity implements
         View.OnClickListener,

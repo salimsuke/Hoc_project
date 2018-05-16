@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package ai.boubaker.hoc;
+package ai.boubaker.hoc.Utils;
 
 import android.content.Context;
 import android.content.SharedPreferences;
 
 import ai.api.util.BluetoothController;
+import ai.boubaker.hoc.AIApplication;
 
 public class SettingsManager {
 

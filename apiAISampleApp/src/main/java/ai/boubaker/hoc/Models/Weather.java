@@ -7,7 +7,7 @@ import com.google.gson.annotations.SerializedName;
  * Created by bouba on 18-Apr-18.
  */
 
-public class weather {
+public class Weather {
     @SerializedName("id")
     @Expose
     int id;
@@ -55,7 +55,7 @@ public class weather {
 
     @Override
     public String toString() {
-        return "weather{" +
+        return "Weather{" +
                 "id=" + id +
                 ", main='" + main + '\'' +
                 ", description='" + description + '\'' +

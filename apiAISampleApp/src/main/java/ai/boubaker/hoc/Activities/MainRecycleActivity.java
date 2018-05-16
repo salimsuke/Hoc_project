@@ -1,4 +1,5 @@
-package ai.boubaker.hoc;
+package ai.boubaker.hoc.Activities;
+
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.AlertDialog;
@@ -11,24 +12,28 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
-import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.CalendarContract;
 import android.speech.tts.TextToSpeech;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.google.gson.Gson;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -39,31 +44,41 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import com.google.gson.Gson;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import ai.boubaker.hoc.Models.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
+
 import ai.api.android.AIConfiguration;
 import ai.api.model.AIError;
 import ai.api.model.AIResponse;
 import ai.api.model.Result;
 import ai.api.sample.R;
 import ai.api.ui.AIButton;
+import ai.boubaker.hoc.AIApplication;
+import ai.boubaker.hoc.Adapters.MessageListAdapter;
+import ai.boubaker.hoc.Utils.Config;
+import ai.boubaker.hoc.Utils.Fetch;
+import ai.boubaker.hoc.Models.BaseMessage;
+import ai.boubaker.hoc.Models.Food;
+import ai.boubaker.hoc.Models.Forecast;
+import ai.boubaker.hoc.Models.IALink;
+import ai.boubaker.hoc.Models.Interventions;
+import ai.boubaker.hoc.Models.Meetings;
+import ai.boubaker.hoc.Models.Offices;
+import ai.boubaker.hoc.Models.User;
+import ai.boubaker.hoc.Models.UserMessage;
+import ai.boubaker.hoc.Models.Users;
+import ai.boubaker.hoc.Models.Weather;
+import ai.boubaker.hoc.Utils.TTS;
 
-import static android.content.Context.MODE_PRIVATE;
+public class MainRecycleActivity extends BaseActivity implements AIButton.AIButtonListener, TextToSpeech.OnInitListener {
 
-public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIButtonListener, TextToSpeech.OnInitListener {
-
-    public static final String TAG = AIButtonSampleActivity.class.getName();
+    public static final String TAG = MainRecycleActivity.class.getName();
     List<String> Responses = new ArrayList<>();
     List<String> img_floor = new ArrayList<>();
     private AIButton aiButton;
@@ -77,7 +92,7 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
             "MM/dd/yyyy'T'HH:mm:ssZ",     "MM/dd/yyyy'T'HH:mm:ss",
             "yyyy:MM:dd HH:mm:ss",        "yyyyMMdd", "yyyy-MM-dd", "HH:mm:ss", "HH:mm" };
     ImageView fotoView;
-    private ListView mList;
+    private RecyclerView mList;
     String URL1;
     List<IALink> HoC1 = new ArrayList<>();
     int indice = -1;
@@ -95,15 +110,18 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
     AIConfiguration config;
     String uri = "https://aiassistantserver.azurewebsites.net/api/";
     List<String> commands = new ArrayList<String>();
+    private List<BaseMessage> messageList;
+
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_aibutton_sample);
+        setContentView(R.layout.activity_main);
         getSupportActionBar().hide();
 
         // initialize TTS
         TTS.init(getApplicationContext());
 
+        messageList  = new ArrayList<BaseMessage>();
         pref =      getApplicationContext().getSharedPreferences("Identif", MODE_PRIVATE);
         language =  getApplicationContext().getSharedPreferences("lang", MODE_PRIVATE);
         editor = pref.edit();
@@ -111,7 +129,8 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
         commands.add("");
         commands.add("");
         aiButton = (AIButton) findViewById(R.id.micButton);
-        mList = (ListView) findViewById(R.id.listView1);
+        mList = (RecyclerView) findViewById(R.id.recycle_chat);
+
         Log.e("Language1" , ""+language.getString("lang", ""));
         Log.e("Base language", ""+getBaseContext().getResources().getConfiguration().locale.getDisplayName());
         if(language.getString("lang", "").contains("fr")){
@@ -136,7 +155,7 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
         config.setRecognizerCancelSound(getResources().openRawResourceFd(R.raw.test_cancel));
         aiButton.initialize(config);
         aiButton.setResultsListener(this);
-        Toast.makeText(AIButtonSampleActivity.this, "Say sign in to begin", Toast.LENGTH_LONG).show();
+        Toast.makeText(MainRecycleActivity.this, "Say sign in to begin", Toast.LENGTH_LONG).show();
     }
 
     @Override
@@ -197,7 +216,7 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                 config.setRecognizerStopSound(getResources().openRawResourceFd(R.raw.test_stop));
                 config.setRecognizerCancelSound(getResources().openRawResourceFd(R.raw.test_cancel));
                 aiButton.initialize(config);
-                aiButton.setResultsListener(AIButtonSampleActivity.this);
+                aiButton.setResultsListener(MainRecycleActivity.this);
                 final Result result = response.getResult();
                 Log.e("Intent name", result.getMetadata().getIntentName());
                 if ((signed_in == true)&&(result.getMetadata().getIntentName().contains("Sign in"))){
@@ -343,7 +362,7 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                 }
                 if ((signed_in == true)||(result.getMetadata().getIntentName().equals("Sign in"))
                         ||(result.getAction().contains("smalltalk"))||(result.getMetadata().getIntentName().equals("web.search"))
-                        ||(result.getMetadata().getIntentName().contains("weather"))
+                        ||(result.getMetadata().getIntentName().contains("Weather"))
                         ||(result.getMetadata().getIntentName().contains("reminders"))
                         ||(result.getMetadata().getIntentName().equals("customize.lang"))){
                     if (result.getAction().contains("smalltalk")){
@@ -401,7 +420,7 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                             calendar_event(eve_name, null, eve_date, eve_recc, result);
                         }
                     }
-                    if (result.getAction().contains("weather")){
+                    if (result.getAction().contains("Weather")){
                         result.getFulfillment().setSpeech(getResources().getString(R.string.processing));
                         TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                         String location = "Ottawa";
@@ -509,7 +528,7 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                         }
                         catch (Exception e){
                         }
-                        food HoC_m = null;
+                        Food HoC_m = null;
                         try {
                             HoC_m = string_meet_food(s.get());
                         } catch (JSONException e) {
@@ -525,7 +544,7 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                         }
                         else{
                             String text = getResources().getString(R.string.caf).replace("day", dayLongName);
-                            text = text.replace("food", HoC_m.getDescription());
+                            text = text.replace("Food", HoC_m.getDescription());
                             result.getFulfillment().setSpeech(text);
                             TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                         }
@@ -584,7 +603,7 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                         else{
                             if(result.getMetadata().getIntentName().contains("visitor.meet.room")){
                                 URL1 = HoC_m.get(min_ind).getRoom().getImg();
-                                fotoView = new ImageView(AIButtonSampleActivity.this);
+                                fotoView = new ImageView(MainRecycleActivity.this);
                                 fotoView.setTag(URL1);
                                 new DownloadImagesTask().execute(fotoView);
                                 result.getFulfillment().setSpeech(getResources().getString(R.string.plan));
@@ -592,7 +611,7 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                                 LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,
                                         LinearLayout.LayoutParams.WRAP_CONTENT);
                                 fotoView.setLayoutParams(layoutParams);
-                                new AlertDialog.Builder(AIButtonSampleActivity.this)
+                                new AlertDialog.Builder(MainRecycleActivity.this)
                                         .setTitle("Help:")
                                         .setView(fotoView)
                                         .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
@@ -658,6 +677,7 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                             }
                             if(result.getMetadata().getIntentName().contains("visitor.meet.more")){
                                 urll = HoC_m.get(min_ind).getUri();
+                                AIApplication.more_infos_uri=urll;
                                 result.getFulfillment().setSpeech(getResources().getString(R.string.more));
                                 TTS.speak(language.getString("lang", ""),result.getFulfillment().getSpeech());
                             }
@@ -768,7 +788,7 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                         try{
                             ind = result.getFulfillment().getSpeech();}
                         catch (Exception e){
-                            Toast.makeText(AIButtonSampleActivity.this, "Tell me again", Toast.LENGTH_LONG).show();
+                            Toast.makeText(MainRecycleActivity.this, "Tell me again", Toast.LENGTH_LONG).show();
                             return;
                         }
                         result.getFulfillment().setSpeech(getResources().getString(R.string.wait));
@@ -868,7 +888,7 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Toast.makeText(AIButtonSampleActivity.this, error.toString(), Toast.LENGTH_LONG).show();
+                Toast.makeText(MainRecycleActivity.this, error.toString(), Toast.LENGTH_LONG).show();
             }
         });
     }
@@ -984,12 +1004,12 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
         }
         return Hoc;
     }
-    public forecast string_json_W(String res) throws JSONException
+    public Forecast string_json_W(String res) throws JSONException
     {
-        forecast Hoc = new forecast();
-        forecast jsonArr = new Gson().fromJson(res, forecast.class);
+        Forecast Hoc = new Forecast();
+        Forecast jsonArr = new Gson().fromJson(res, Forecast.class);
         if (jsonArr != null) {
-            Hoc.setWeather(new weather[]{jsonArr.getWeather()[0]});
+            Hoc.setWeather(new Weather[]{jsonArr.getWeather()[0]});
             Hoc.setTemp_hum_press(jsonArr.getTemp_hum_press());
             Hoc.setWind(jsonArr.getWind());
             Hoc.setSys(jsonArr.getSys());
@@ -1029,10 +1049,10 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
         }
         return a;
     }
-    public food string_meet_food(String res) throws JSONException
+    public Food string_meet_food(String res) throws JSONException
     {
-        food jsonArr = new Gson().fromJson(res, food.class);
-        food a = new food();
+        Food jsonArr = new Gson().fromJson(res, Food.class);
+        Food a = new Food();
         if ((jsonArr != null)) {
             a.setId(jsonArr.getId());
             a.setId(jsonArr.getId());
@@ -1150,26 +1170,46 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
         else
             img_floor.add("");
 
-        CustomListAdapter test = new CustomListAdapter(AIButtonSampleActivity.this, Responses.toArray(new String[Responses.size()]),
-                img_floor.toArray(new String[img_floor.size()]), result.getMetadata().getIntentName());
-        if (mList.getCount()<5){
-            mList.setTranscriptMode(0);
-            mList.setStackFromBottom(false);
-        }
-        else{
-            mList.setTranscriptMode(2);
-            mList.setStackFromBottom(true);
-        }
-        mList.setAdapter(test);
-        mList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                if ((urll != null)&&((Responses.get(position).contains("For more information press here.")))) {
-                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(urll));
-                    startActivity(intent);
-                }
-            }
-        });
+        // Setup recycle view with sender and receiver viewHolders
+
+        int sender = 1;
+
+        User senderUser= new User();
+        senderUser.setUserId(sender);
+        senderUser.setNickname("Me");
+        //senderUser.setProfileUrl(this.getResources().getString(R.drawable.hoc2));
+
+        UserMessage messageSender= new UserMessage();
+        messageSender.setCreatedAt(System.currentTimeMillis()-10000);
+        messageSender.setMessage(result.getResolvedQuery());
+        messageSender.setSender(senderUser);
+
+        messageList.add(messageSender);
+
+        // create receive message
+
+        int receiver = 2;
+
+        User chatBot= new User();
+        chatBot.setUserId(receiver);
+        chatBot.setNickname("HeC AI");
+        //chatBot.setProfileUrl(this.getResources().getString(R.drawable.hoc2));
+
+
+        UserMessage message= new UserMessage();
+        message.setCreatedAt(System.currentTimeMillis());
+        message.setMessage(result.getFulfillment().getSpeech());
+        message.setSender(chatBot);
+
+        messageList.add(message);
+
+
+
+        MessageListAdapter mMessageAdapter = new MessageListAdapter(this, messageList);
+        mList.setLayoutManager(new LinearLayoutManager(this));
+        mList.setAdapter(mMessageAdapter);
+        mList.smoothScrollToPosition(messageList.size());
+
 
     }
     class getJSON extends AsyncTask<String, Void, Void> {
@@ -1181,7 +1221,7 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
             @Override
             protected Void doInBackground(String... params) {
                 try {
-                    URL url = new URL("http://api.openweathermap.org/data/2.5/weather?q="+params[0].trim()+"&APPID=ea574594b9d36ab688642d5fbeab847e");
+                    URL url = new URL("http://api.openweathermap.org/data/2.5/Weather?q="+params[0].trim()+"&APPID=ea574594b9d36ab688642d5fbeab847e");
                     Log.e("URL", url.toString());
                     HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                     BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
@@ -1205,8 +1245,8 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
             @Override
             protected void onPostExecute(Void Void) {
                 if(data_weather!=null){
-                    Log.e("my weather received",data_weather.toString());
-                    forecast f = null;
+                    Log.e("my Weather received",data_weather.toString());
+                    Forecast f = null;
                     try {
                         f = string_json_W(data_weather.toString());
                     } catch (JSONException e) {
@@ -1223,13 +1263,13 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
                     java.text.DecimalFormat df = new java.text.DecimalFormat("0.#");
                     AlertDialog.Builder builder;
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        builder = new AlertDialog.Builder(AIButtonSampleActivity.this, android.R.style.Theme_Material_Dialog_Alert);
+                        builder = new AlertDialog.Builder(MainRecycleActivity.this, android.R.style.Theme_Material_Dialog_Alert);
                     } else {
-                        builder = new AlertDialog.Builder(AIButtonSampleActivity.this);
+                        builder = new AlertDialog.Builder(MainRecycleActivity.this);
                     }
 
                     builder.setView(R.layout.forecast_w);
-                    LayoutInflater inflater = AIButtonSampleActivity.this.getLayoutInflater();
+                    LayoutInflater inflater = MainRecycleActivity.this.getLayoutInflater();
                     View dialogView = inflater.inflate(R.layout.forecast_w, null);
                     builder.setView(dialogView);
                     loc = (TextView) dialogView.findViewById(R.id.location);
@@ -1350,7 +1390,7 @@ public class AIButtonSampleActivity extends BaseActivity implements AIButton.AIB
             intent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, milliseconds + (3600 * 1000));
             intent.putExtra(CalendarContract.EXTRA_EVENT_END_TIME, milliseconds + (2*3600 * 1000));
         }
-        //Toast.makeText(AIButtonSampleActivity.this, ""+notif, Toast.LENGTH_LONG).show();
+        //Toast.makeText(MainActivity.this, ""+notif, Toast.LENGTH_LONG).show();
         startActivity(intent);
     }
     public static Date parse(String d) {

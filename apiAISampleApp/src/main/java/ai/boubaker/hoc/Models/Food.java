@@ -7,7 +7,7 @@ import com.google.gson.annotations.SerializedName;
  * Created by bouba on 19-Mar-18.
  */
 
-public class food {
+public class Food {
     @SerializedName("id")
     @Expose
     int id;
@@ -17,10 +17,10 @@ public class food {
     @SerializedName("description")
     @Expose
     String description;
-    public food(){
+    public Food(){
     }
 
-    public food(int id, String day, String description) {
+    public Food(int id, String day, String description) {
         this.id = id;
         this.day = day;
         this.description = description;

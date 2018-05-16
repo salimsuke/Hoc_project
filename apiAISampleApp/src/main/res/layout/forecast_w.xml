@@ -73,7 +73,7 @@
 
     </RelativeLayout>
 
-    <!-- Here the current weather data -->
+    <!-- Here the currWeatherther data -->
 
     <!-- Temperature data -->
     <ImageView
@@ -132,7 +132,7 @@
         android:layout_toRightOf="@id/windSpeed"
         android:layout_alignBaseline="@id/windSpeed"
         android:layout_marginLeft="10dp"/>
-    <!-- End wind Data -->
+    <!-- Windwind Data -->
 
     <!-- Humidity -->
     <ImageView

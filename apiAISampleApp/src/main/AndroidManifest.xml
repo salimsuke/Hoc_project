@@ -21,7 +21,7 @@
 
         <activity
             android:screenOrientation="portrait"
-            android:name="ai.boubaker.hoc.AIButtonSampleActivity"
+            android:name="ai.boubaker.hoc.Activities.MainRecycleActivity"
             android:label="@string/title_activity_aibutton_sample">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -31,7 +31,7 @@
         </activity>
 
         <activity
-            android:name="ai.boubaker.hoc.AISettingsActivity"
+            android:name="ai.boubaker.hoc.Activities.AISettingsActivity"
             android:label="@string/action_settings">
 
         </activity>

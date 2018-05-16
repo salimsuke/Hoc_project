@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ai.boubaker.hoc;
+package ai.boubaker.hoc.Utils;
 
 public abstract class Config {
     // copy this keys from your developer dashboard

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="action_settings">Settings</string>
-    <string name="title_activity_aibutton_sample">AIButtonSampleActivity</string>
+    <string name="title_activity_aibutton_sample">HeC Assistant</string>
     <string name="title_activity_aiservice_sample">AIServiceSample</string>
     <string name="title_activity_aidialog_sample">AIDialogSample</string>
     <string name="title_activity_aitext_sample">AITextSample</string>

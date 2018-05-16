@@ -21,10 +21,14 @@ import android.content.Context;
 import android.util.Log;
 
 import ai.api.util.BluetoothController;
+import ai.boubaker.hoc.Utils.SettingsManager;
 
 public class AIApplication extends Application {
 
     private static final String TAG = AIApplication.class.getSimpleName();
+    public static AIApplication appInstance;
+    public static String more_infos_uri;
+
 
     private int activitiesCount;
     private BluetoothControllerImpl bluetoothController;
@@ -33,6 +37,7 @@ public class AIApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        appInstance=this;
         bluetoothController = new BluetoothControllerImpl(this);
         settingsManager = new SettingsManager(this);
     }
@@ -45,7 +50,7 @@ public class AIApplication extends Application {
         return settingsManager;
     }
 
-    protected void onActivityResume() {
+    public void onActivityResume() {
         if (activitiesCount++ == 0) { // on become foreground
             if (settingsManager.isUseBluetooth()) {
                 bluetoothController.start();
@@ -53,7 +58,7 @@ public class AIApplication extends Application {
         }
     }
 
-    protected void onActivityPaused() {
+    public void onActivityPaused() {
         if (--activitiesCount == 0) { // on become background
             bluetoothController.stop();
         }

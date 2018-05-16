@@ -7,22 +7,22 @@ import com.google.gson.annotations.SerializedName;
  * Created by bouba on 18-Apr-18.
  */
 
-public class forecast {
-    @SerializedName("weather")
+public class Forecast {
+    @SerializedName("Weather")
     @Expose
-    weather[] weather;
+    Weather[] weather;
     @SerializedName("main")
     @Expose
     temp_hum_press temp_hum_press;
-    @SerializedName("wind")
+    @SerializedName("Wind")
     @Expose
-    wind wind;
+    Wind wind;
     @SerializedName("name")
     @Expose
     String name;
-    @SerializedName("sys")
+    @SerializedName("Sys")
     @Expose
-    sys sys;
+    Sys sys;
     @SerializedName("visibility")
     @Expose
     int visibility;
@@ -35,11 +35,11 @@ public class forecast {
         this.visibility = visibility;
     }
 
-    public ai.boubaker.hoc.Models.sys getSys() {
+    public Sys getSys() {
         return sys;
     }
 
-    public void setSys(ai.boubaker.hoc.Models.sys sys) {
+    public void setSys(Sys sys) {
         this.sys = sys;
     }
 
@@ -51,11 +51,11 @@ public class forecast {
         this.name = name;
     }
 
-    public ai.boubaker.hoc.Models.weather[] getWeather() {
+    public Weather[] getWeather() {
         return weather;
     }
 
-    public void setWeather(ai.boubaker.hoc.Models.weather[] weather) {
+    public void setWeather(Weather[] weather) {
         this.weather = weather;
     }
 
@@ -67,20 +67,20 @@ public class forecast {
         this.temp_hum_press = temp_hum_press;
     }
 
-    public ai.boubaker.hoc.Models.wind getWind() {
+    public Wind getWind() {
         return wind;
     }
 
-    public void setWind(ai.boubaker.hoc.Models.wind wind) {
+    public void setWind(Wind wind) {
         this.wind = wind;
     }
 
     @Override
     public String toString() {
-        return "forecast{" +
-                "weather=" + weather.toString() +
+        return "Forecast{" +
+                "Weather=" + weather.toString() +
                 ", temp_hum_press=" + temp_hum_press.toString() +
-                ", wind=" + wind.toString() +
+                ", Wind=" + wind.toString() +
                 '}';
     }
 }

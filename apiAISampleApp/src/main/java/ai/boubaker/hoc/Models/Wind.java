@@ -7,7 +7,7 @@ import com.google.gson.annotations.SerializedName;
  * Created by bouba on 18-Apr-18.
  */
 
-public class wind {
+public class Wind {
     @SerializedName("speed")
     @Expose
     double speed;
@@ -33,7 +33,7 @@ public class wind {
 
     @Override
     public String toString() {
-        return "wind{" +
+        return "Wind{" +
                 "speed=" + speed +
                 ", deg=" + deg +
                 '}';
