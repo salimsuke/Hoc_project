@@ -1,6 +1,14 @@
 apply plugin: 'com.android.application'
 
 android {
+    signingConfigs {
+        config {
+            keyAlias 'Salim'
+            storeFile file('C:/Users/Salim/Desktop/Hoc_project/hoc_assistant_key.jks')
+            storePassword 'phoenicia2018'
+            keyPassword 'phoenicia2018'
+        }
+    }
     compileSdkVersion 26
     useLibrary 'org.apache.http.legacy'
     flavorDimensions "production"
@@ -10,7 +18,7 @@ android {
         targetSdkVersion 26
         versionCode 1
         versionName "1.0"
-        flavorDimensions "production","development"
+        flavorDimensions "production", "development"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         manifestPlaceholders = [HOCKEYAPP_APP_ID: "53bc280ea19c4b7985fbb570ded4017d"]
     }
@@ -24,7 +32,6 @@ android {
         checkReleaseBuilds false
         abortOnError false
     }
-
     productFlavors {
         /*Creating production environment for release app on app store also to work with prod entities*/
         production {
@@ -78,5 +85,4 @@ dependencies {
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
     compile 'com.android.support:design:26.1.0'
     compile 'net.hockeyapp.android:HockeySDK:5.1.0'
-
 }
