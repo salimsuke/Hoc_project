@@ -1,0 +1,37 @@
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+    <style name="Theme.Default" parent="@android:style/Theme"></style>
+    <style name="Theme.NoTitle" parent="@android:style/Theme.NoTitleBar"></style>
+    <style name="Theme.FullScreen" parent="@android:style/Theme.NoTitleBar.Fullscreen"></style>
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Base.Theme.AppCompat.Light.DarkActionBar">
+    </style>
+    <style name="textBig" parent="@android:style/TextAppearance.Large">
+        <item name="android:textSize">82sp</item>
+        <item name="android:textColor">#ffffff</item>
+    </style>
+    <style name="textSmall" parent="@android:style/TextAppearance.Small">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">#ffffff</item>
+    </style>
+
+    <style name="textVerySmall" parent="@android:style/TextAppearance.Small">
+        <item name="android:textSize">8sp</item>
+        <item name="android:textColor">#ffffff</item>
+    </style>
+    <style name="SettingsSection">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:paddingLeft">20dp</item>
+        <item name="android:paddingRight">10dp</item>
+        <item name="android:minHeight">50dp</item>
+        <item name="android:background">@drawable/view_alpha_selector</item>
+        <item name="android:clickable">true</item>
+    </style>
+
+    <style name="SettingsDivider">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">1dp</item>
+        <item name="android:background">@color/divider_color</item>
+    </style>
+
+</resources>

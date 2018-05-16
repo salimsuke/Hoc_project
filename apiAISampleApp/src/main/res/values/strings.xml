@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_aibutton_sample">HeC Assistant</string>
+    <string name="title_activity_aiservice_sample">AIServiceSample</string>
+    <string name="title_activity_aidialog_sample">AIDialogSample</string>
+    <string name="title_activity_aitext_sample">AITextSample</string>
+    <string name="service_sample_text">Service sample</string>
+    <string name="button_sample_text">Button sample</string>
+    <string name="dialog_sample_text">Dialog sample</string>
+    <string name="text_sample_text">Text sample</string>
+    <string name="title_app_widget">Voice command</string>
+    <string name="non_empty_query">Query should not be empty</string>
+    <string name="use_bluetooth_headset">Use Bluetooth headset</string>
+    <string name="signed_in">You are already signed in.</string>
+    <string name="signed_out">You are already signed out.</string>
+    <string name="welcome_usr">Welcome name, you are signed in.</string>
+    <string name="sign_in_issue">We are sorry we can\'t sign you in.</string>
+    <string name="processing">Processing your research ..</string>
+    <string name="time">Now it\'s time.</string>
+    <string name="bus">Next bus in xxx minute.</string>
+    <string name="buss">Next bus in xxx minutes.</string>
+    <string name="wait">Please wait.</string>
+    <string name="db_empty">The data base is empty.</string>
+    <string name="caf_closed">The cafeteria is closed for the weekend.</string>
+    <string name="caf">day we have food</string>
+    <string name="plan">This is the plan of the floor to get to the meeting\'s room.\n</string>
+    <string name="next_meeting">Your next meeting is on date with chair_name, room_name in room_building floor number room_floor and it\'s about description</string>
+    <string name="meet_room">Your next meeting is in room_name</string>
+    <string name="meet_brief">Your next meeting is on date about description</string>
+    <string name="meet_chair">The next meeting will be chaired by chair_name</string>
+    <string name="more">For more information press here.</string>
+    <string name="switch_prob">The switch does not exist or the database is empty.</string>
+    <string name="office_switch">The office office_desc is served by switch office_name.</string>
+    <string name="sign_in">I\'m sorry i can\'t help you until you sign in.</string>
+    <!--<string name="switch_office"></string>-->
+</resources>
